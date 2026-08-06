@@ -2,7 +2,7 @@ import os
 from qdrant_client import QdrantClient
 from langchain_qdrant import QdrantVectorStore
 from src.config.settings import settings
-from src.llms.openai import get_embeddings
+from src.llms.gemini import get_embeddings
 
 COLLECTION_NAME = "adaptive_rag_documents"
 
@@ -26,7 +26,7 @@ def get_qdrant_client() -> QdrantClient:
 
 def get_vector_store() -> QdrantVectorStore:
     """
-    Initializes and returns the QdrantVectorStore with OpenAI embeddings.
+    Initializes and returns the QdrantVectorStore with Gemini embeddings.
     """
     client = get_qdrant_client()
     embeddings = get_embeddings()

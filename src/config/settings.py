@@ -11,18 +11,18 @@ class Settings(BaseModel):
     """
     Application Settings and Environment Configuration Manager.
     """
-    # OpenAI Credentials & Models
-    OPENAI_API_KEY: str = Field(
-        default_factory=lambda: os.getenv("OPENAI_API_KEY", ""),
-        description="API Key for OpenAI services"
+    # Google Gemini Credentials & Models
+    GEMINI_API_KEY: str = Field(
+        default_factory=lambda: os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY", ""),
+        description="API Key for Google Gemini services"
     )
     MODEL_NAME: str = Field(
-        default_factory=lambda: os.getenv("MODEL_NAME", "gpt-4o-mini"),
+        default_factory=lambda: os.getenv("MODEL_NAME", "gemini-flash-latest"),
         description="Default LLM model name for chat and routing"
     )
     EMBEDDING_MODEL: str = Field(
-        default_factory=lambda: os.getenv("EMBEDDING_MODEL", "text-embedding-3-small"),
-        description="Default OpenAI embedding model for vector search"
+        default_factory=lambda: os.getenv("EMBEDDING_MODEL", "models/text-embedding-004"),
+        description="Default Gemini embedding model for vector search"
     )
 
     # Qdrant Vector Database

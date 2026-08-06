@@ -3,7 +3,7 @@ from langchain_community.tools.tavily_search import TavilySearchResults
 from src.models.state import GraphState
 from src.models.route_identifier import RouteQuery
 from src.models.grade import GradeDocuments
-from src.llms.openai import get_llm
+from src.llms.gemini import get_llm
 from src.rag.retriever_setup import get_retriever
 
 
@@ -13,7 +13,7 @@ from src.rag.retriever_setup import get_retriever
 def route_query(state: GraphState) -> str:
     """
     Analyzes the user query and routes it to the correct pipeline.
-    Uses OpenAI Structured Output to guarantee a valid routing decision.
+    Uses Gemini Structured Output to guarantee a valid routing decision.
 
     Returns:
         str: One of 'vectorstore', 'websearch', or 'general'
