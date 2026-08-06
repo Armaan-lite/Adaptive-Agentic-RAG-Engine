@@ -83,10 +83,10 @@ def grade_documents(state: GraphState) -> GraphState:
             HumanMessage(content=f"Document:\n{doc.page_content}\n\nQuery: {query}")
         ])
         if result.binary_score == "yes":
-            print(f"--- DOCUMENT GRADED: RELEVANT ✅ ---")
+            print(f"--- DOCUMENT GRADED: RELEVANT ---")
             relevant_docs.append(doc)
         else:
-            print(f"--- DOCUMENT GRADED: IRRELEVANT ❌ ---")
+            print(f"--- DOCUMENT GRADED: IRRELEVANT ---")
 
     # If no documents passed the relevance check, trigger web search fallback
     web_search = len(relevant_docs) == 0
@@ -147,7 +147,7 @@ def web_search(state: GraphState) -> GraphState:
 
 
 # ─────────────────────────────────────────
-# NODE 6: Answer Generator
+# NODE 6: Answer Generator (Grounded in Documents/Context)
 # ─────────────────────────────────────────
 def generate(state: GraphState) -> GraphState:
     """
@@ -173,6 +173,35 @@ def generate(state: GraphState) -> GraphState:
     ]
 
     response = llm.invoke(generate_prompt)
-    print("--- GENERATION COMPLETE ✅ ---")
+    answer_text = response.content if isinstance(response.content, str) else "".join([c.get("text", "") for c in response.content if isinstance(c, dict)])
+    print("--- GENERATION COMPLETE ---")
 
-    return {"generation": response.content}
+    return {"generation": answer_text}
+
+
+# ─────────────────────────────────────────
+# NODE 7: General LLM (Direct Answering for General/Conversational Queries)
+# ─────────────────────────────────────────
+def general_llm(state: GraphState) -> GraphState:
+    """
+    Answers general knowledge, conversational, math, or coding queries directly.
+    Does NOT restrict the answer to any document context.
+    """
+    print("--- NODE: GENERAL LLM ---")
+    query = state["query"]
+
+    llm = get_llm(temperature=0)
+
+    prompt = [
+        SystemMessage(content=(
+            "You are a helpful, accurate AI assistant. "
+            "Answer the user's question directly, clearly, and concisely."
+        )),
+        HumanMessage(content=query)
+    ]
+
+    response = llm.invoke(prompt)
+    answer_text = response.content if isinstance(response.content, str) else "".join([c.get("text", "") for c in response.content if isinstance(c, dict)])
+    print("--- GENERAL LLM GENERATION COMPLETE ---")
+
+    return {"generation": answer_text}
