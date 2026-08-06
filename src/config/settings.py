@@ -21,7 +21,7 @@ class Settings(BaseModel):
         description="Default LLM model name for chat and routing"
     )
     EMBEDDING_MODEL: str = Field(
-        default_factory=lambda: os.getenv("EMBEDDING_MODEL", "models/text-embedding-004"),
+        default_factory=lambda: os.getenv("EMBEDDING_MODEL", "models/gemini-embedding-001"),
         description="Default Gemini embedding model for vector search"
     )
 

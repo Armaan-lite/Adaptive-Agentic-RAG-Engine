@@ -1,7 +1,7 @@
 from langchain_core.messages import HumanMessage, SystemMessage
 from langgraph.graph import StateGraph, END, START
 from src.models.state import GraphState
-from src.models.verification_result import GradeHallucination, GradeAnswer
+from src.models.verification_result import AuditResult
 from src.llms.gemini import get_llm
 from src.rag.nodes import (
     retrieve,
@@ -49,7 +49,7 @@ def decide_after_grading(state: GraphState) -> str:
 
 def decide_after_generation(state: GraphState) -> str:
     """
-    Evaluates the generated answer for hallucinations and question relevance (Self-RAG / CRAG Audit).
+    Evaluates the generated answer for hallucinations and question relevance in a single pass (Self-RAG / CRAG Audit).
 
     Returns:
         'useful': Grounded & answers question -> END
@@ -62,44 +62,29 @@ def decide_after_generation(state: GraphState) -> str:
     generation = state["generation"]
 
     llm = get_llm(temperature=0)
+    structured_audit_llm = llm.with_structured_output(AuditResult)
 
-    # 1. Hallucination Check (Is generation grounded in facts?)
-    structured_hallucination_llm = llm.with_structured_output(GradeHallucination)
-    hallucination_prompt = SystemMessage(content=(
-        "You are an impartial auditor evaluating hallucination. "
-        "Grade whether the LLM generation is strictly grounded in and supported by the provided facts. "
-        "Give binary score 'yes' if grounded, 'no' if hallucinated."
-    ))
     context = "\n\n".join([doc.page_content for doc in documents])
-    h_result: GradeHallucination = structured_hallucination_llm.invoke([
-        hallucination_prompt,
-        HumanMessage(content=f"Facts:\n{context}\n\nGeneration:\n{generation}")
+    audit_prompt = SystemMessage(content=(
+        "You are an auditor evaluating AI generation quality.\n"
+        "1. Grade if the generation is strictly grounded in and supported by the facts (is_grounded: true/false).\n"
+        "2. Grade if the generation addresses and resolves the user's question (answers_question: true/false)."
+    ))
+
+    result: AuditResult = structured_audit_llm.invoke([
+        audit_prompt,
+        HumanMessage(content=f"Facts:\n{context}\n\nQuestion:\n{query}\n\nGeneration:\n{generation}")
     ])
 
-    if h_result.binary_score == "yes":
-        print("--- AUDIT: Generation is Grounded (No Hallucination) ---")
-
-        # 2. Question Relevance Check (Does generation actually answer the query?)
-        structured_answer_llm = llm.with_structured_output(GradeAnswer)
-        answer_prompt = SystemMessage(content=(
-            "You are an evaluator checking if an answer resolves a question. "
-            "Grade whether the generation addresses and answers the user's question. "
-            "Give binary score 'yes' if it answers the question, 'no' if not."
-        ))
-        a_result: GradeAnswer = structured_answer_llm.invoke([
-            answer_prompt,
-            HumanMessage(content=f"Question:\n{query}\n\nGeneration:\n{generation}")
-        ])
-
-        if a_result.binary_score == "yes":
-            print("--- AUDIT: Answer is Useful and Resolves Query ---")
-            return "useful"
-        else:
-            print("--- AUDIT: Answer did NOT resolve query -> Rewriting Query ---")
-            return "not_useful"
-    else:
-        print("--- AUDIT: Generation Hallucinated -> Regenerating ---")
+    if result.is_grounded and result.answers_question:
+        print("--- AUDIT: Grounded & Answers Question -> END ---")
+        return "useful"
+    elif not result.is_grounded:
+        print("--- AUDIT: Hallucination Detected -> Regenerating ---")
         return "not_grounded"
+    else:
+        print("--- AUDIT: Did Not Resolve Query -> Rewriting Query ---")
+        return "not_useful"
 
 
 # ─────────────────────────────────────────

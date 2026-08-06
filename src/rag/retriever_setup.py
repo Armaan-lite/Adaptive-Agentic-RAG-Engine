@@ -27,9 +27,22 @@ def get_qdrant_client() -> QdrantClient:
 def get_vector_store() -> QdrantVectorStore:
     """
     Initializes and returns the QdrantVectorStore with Gemini embeddings.
+    Auto-creates the Qdrant collection if it does not exist.
     """
     client = get_qdrant_client()
     embeddings = get_embeddings()
+
+    # Auto-create Qdrant collection if it does not exist
+    if not client.collection_exists(COLLECTION_NAME):
+        from qdrant_client.http import models as rest
+        sample_vector = embeddings.embed_query("test")
+        client.create_collection(
+            collection_name=COLLECTION_NAME,
+            vectors_config=rest.VectorParams(
+                size=len(sample_vector),
+                distance=rest.Distance.COSINE,
+            ),
+        )
 
     return QdrantVectorStore(
         client=client,

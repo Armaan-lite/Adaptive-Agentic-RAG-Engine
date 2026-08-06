@@ -23,7 +23,7 @@ class RAGAPIClient:
             "session_id": session_id
         }
 
-        with httpx.Client(timeout=60.0) as client:
+        with httpx.Client(timeout=180.0) as client:
             response = client.post(url, json=payload)
             response.raise_for_status()
             return response.json()

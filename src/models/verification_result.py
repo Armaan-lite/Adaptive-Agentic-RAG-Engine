@@ -1,22 +1,25 @@
-from typing import Literal
 from pydantic import BaseModel, Field
 
 
-class GradeHallucination(BaseModel):
+class AuditResult(BaseModel):
     """
-    Binary grade schema to check if generation is grounded in document context.
+    Combined Self-RAG audit schema evaluating hallucination and question relevance in a single pass.
     """
-    binary_score: Literal["yes", "no"] = Field(
+    is_grounded: bool = Field(
         ...,
-        description="Relevance score: 'yes' if generation is supported by/grounded in facts, 'no' if hallucinated."
+        description="True if generation is strictly grounded in and supported by provided facts, False if hallucinated."
+    )
+    answers_question: bool = Field(
+        ...,
+        description="True if generation addresses and answers the user's question, False if not."
     )
 
 
-class GradeAnswer(BaseModel):
+class GradeDocuments(BaseModel):
     """
-    Binary grade schema to check if generation actually addresses the user's question.
+    Binary grade schema for evaluating document relevance.
     """
-    binary_score: Literal["yes", "no"] = Field(
+    binary_score: str = Field(
         ...,
-        description="Relevance score: 'yes' if generation addresses and answers the question, 'no' if not."
+        description="Relevance score: 'yes' if document is relevant to query, 'no' if not."
     )
