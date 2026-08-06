@@ -29,42 +29,62 @@ GitHub renders standard Mermaid flowcharts directly in your browser. Below is th
 
 ```mermaid
 flowchart TD
-    START([User Query Input]) --> ROUTER{1. Intent Router}
-
-    %% Routing Paths
-    ROUTER -- Vector Store Request --> RETRIEVE[2. Vector DB Retrieval Qdrant]
-    ROUTER -- Real-time News/Events --> WEB_SEARCH[5. Tavily Web Search]
-    ROUTER -- General Conversation/Math --> GENERAL_LLM[7. Direct General LLM]
-
-    %% Retrieval & Grading Loop
-    RETRIEVE --> GRADE{3. Grade Document Relevance}
-    GRADE -- Relevant Context Found --> GENERATE[6. Synthesize Answer]
-    GRADE -- All Docs Irrelevant --> REWRITE[4. Rewrite & Optimize Query]
-
-    %% Fallback Rewriting Loop
-    REWRITE --> WEB_SEARCH
-    WEB_SEARCH --> GENERATE
-
-    %% Self-Correction & Audit Loop
-    GENERATE --> AUDIT{8. Self-RAG Audit Node}
+    %% Nodes
+    START([User Query Input])
+    END_OK([Output Verified Answer])
     
-    AUDIT -- Grounded & Answers Question --> END_SUCCESS([Output Verified Answer])
-    AUDIT -- Hallucination Detected (Retry < 3) --> GENERATE
-    AUDIT -- Insufficient Information (Retry < 3) --> REWRITE
-    AUDIT -- Max Retries Reached (Safeguard) --> END_SUCCESS
-    GENERAL_LLM --> END_SUCCESS
+    subgraph STAGE1 ["1. Intent Routing & Fallback"]
+        ROUTER{"1. Intent Router"}
+        GEN_LLM["Direct LLM Response"]
+        WEB["Tavily Web Search"]
+    end
 
-    %% Styling
-    classDef startEnd fill:#1F2937,stroke:#9CA3AF,stroke-width:2px,color:#fff;
-    classDef routerNode fill:#3B82F6,stroke:#1D4ED8,stroke-width:2px,color:#fff;
-    classDef auditNode fill:#EF4444,stroke:#B91C1C,stroke-width:2px,color:#fff;
-    classDef actionNode fill:#10B981,stroke:#047857,stroke-width:2px,color:#fff;
-    
-    class START,END_SUCCESS startEnd;
-    class ROUTER,GRADE,AUDIT routerNode;
-    class AUDIT auditNode;
-    class RETRIEVE,WEB_SEARCH,REWRITE,GENERATE,GENERAL_LLM actionNode;
+    subgraph STAGE2 ["2. Retrieval & Quality Grading"]
+        RETRIEVE["Vector DB Retrieval (Qdrant)"]
+        GRADE{"Grade Document Relevance"}
+        REWRITE["Rewrite & Optimize Query"]
+    end
+
+    subgraph STAGE3 ["3. Synthesis & Self-Correction"]
+        GENERATE["Synthesize Answer"]
+        AUDIT{"Self-RAG Audit Node"}
+    end
+
+    %% Flow Edges
+    START --> ROUTER
+
+    ROUTER -- "Vector Store Request" --> RETRIEVE
+    ROUTER -- "Real-time Info" --> WEB
+    ROUTER -- "General Chit-Chat / Math" --> GEN_LLM
+
+    RETRIEVE --> GRADE
+    GRADE -- "Docs Relevant" --> GENERATE
+    GRADE -- "Docs Irrelevant" --> REWRITE
+
+    REWRITE --> WEB
+    WEB --> GENERATE
+
+    GENERATE --> AUDIT
+    AUDIT -- "Grounded & Resolves Query" --> END_OK
+    AUDIT -- "Hallucination (Retry < 3)" --> GENERATE
+    AUDIT -- "Unresolved Query (Retry < 3)" --> REWRITE
+    AUDIT -- "Max Retries Reached" --> END_OK
+
+    GEN_LLM --> END_OK
+
+    %% Formatting
+    style START fill:#1e293b,stroke:#64748b,stroke-width:2px,color:#fff
+    style END_OK fill:#065f46,stroke:#10b981,stroke-width:2px,color:#fff
+    style ROUTER fill:#1e40af,stroke:#3b82f6,stroke-width:2px,color:#fff
+    style GRADE fill:#1e40af,stroke:#3b82f6,stroke-width:2px,color:#fff
+    style AUDIT fill:#991b1b,stroke:#ef4444,stroke-width:2px,color:#fff
+    style RETRIEVE fill:#0f766e,stroke:#14b8a6,stroke-width:1px,color:#fff
+    style REWRITE fill:#0f766e,stroke:#14b8a6,stroke-width:1px,color:#fff
+    style WEB fill:#0f766e,stroke:#14b8a6,stroke-width:1px,color:#fff
+    style GENERATE fill:#0f766e,stroke:#14b8a6,stroke-width:1px,color:#fff
+    style GEN_LLM fill:#0f766e,stroke:#14b8a6,stroke-width:1px,color:#fff
 ```
+
 
 ---
 
