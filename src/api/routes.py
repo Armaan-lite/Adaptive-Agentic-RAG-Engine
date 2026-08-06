@@ -37,7 +37,13 @@ async def query_rag(request: QueryRequest):
         }
 
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        error_msg = str(e)
+        if "429" in error_msg or "RESOURCE_EXHAUSTED" in error_msg:
+            raise HTTPException(
+                status_code=429,
+                detail="Rate limit reached on LLM API key. Please wait 10-15 seconds and try again!"
+            )
+        raise HTTPException(status_code=500, detail=error_msg)
 
 
 @router.post("/documents/upload")

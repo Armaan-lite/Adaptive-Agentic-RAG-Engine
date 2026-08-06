@@ -11,18 +11,18 @@ class Settings(BaseModel):
     """
     Application Settings and Environment Configuration Manager.
     """
-    # Google Gemini Credentials & Models
-    GEMINI_API_KEY: str = Field(
-        default_factory=lambda: os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY", ""),
-        description="API Key for Google Gemini services"
+    # Groq LLM Credentials & Models
+    GROQ_API_KEY: str = Field(
+        default_factory=lambda: os.getenv("GROQ_API_KEY", ""),
+        description="API Key for Groq services"
     )
     MODEL_NAME: str = Field(
-        default_factory=lambda: os.getenv("MODEL_NAME", "gemini-flash-latest"),
+        default_factory=lambda: os.getenv("MODEL_NAME", "llama-3.3-70b-versatile"),
         description="Default LLM model name for chat and routing"
     )
     EMBEDDING_MODEL: str = Field(
-        default_factory=lambda: os.getenv("EMBEDDING_MODEL", "models/gemini-embedding-001"),
-        description="Default Gemini embedding model for vector search"
+        default_factory=lambda: os.getenv("EMBEDDING_MODEL", "all-MiniLM-L6-v2"),
+        description="Default local HuggingFace embedding model for vector search"
     )
 
     # Qdrant Vector Database

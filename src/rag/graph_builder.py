@@ -2,7 +2,7 @@ from langchain_core.messages import HumanMessage, SystemMessage
 from langgraph.graph import StateGraph, END, START
 from src.models.state import GraphState
 from src.models.verification_result import AuditResult
-from src.llms.gemini import get_llm
+from src.llms.groq_client import get_llm
 from src.rag.nodes import (
     retrieve,
     grade_documents,
