@@ -29,50 +29,31 @@ GitHub renders standard Mermaid flowcharts directly in your browser. Below is th
 
 ```mermaid
 flowchart TD
-    %% Nodes
-    START([User Query Input])
-    END_OK([Output Verified Answer])
-    
-    subgraph STAGE1 ["1. Intent Routing & Fallback"]
-        ROUTER{"1. Intent Router"}
-        GEN_LLM["Direct LLM Response"]
-        WEB["Tavily Web Search"]
-    end
+    START([User Query]) --> ROUTER{"1. Intent Router"}
 
-    subgraph STAGE2 ["2. Retrieval & Quality Grading"]
-        RETRIEVE["Vector DB Retrieval (Qdrant)"]
-        GRADE{"Grade Document Relevance"}
-        REWRITE["Rewrite & Optimize Query"]
-    end
+    %% Primary Routing
+    ROUTER -->|"Vector Store"| RETRIEVE["Vector DB Retrieval (Qdrant)"]
+    ROUTER -->|"Real-Time Request"| WEB["Tavily Web Search"]
+    ROUTER -->|"Chit-Chat / Math"| GEN_LLM["Direct LLM"]
 
-    subgraph STAGE3 ["3. Synthesis & Self-Correction"]
-        GENERATE["Synthesize Answer"]
-        AUDIT{"Self-RAG Audit Node"}
-    end
-
-    %% Flow Edges
-    START --> ROUTER
-
-    ROUTER -- "Vector Store Request" --> RETRIEVE
-    ROUTER -- "Real-time Info" --> WEB
-    ROUTER -- "General Chit-Chat / Math" --> GEN_LLM
-
-    RETRIEVE --> GRADE
-    GRADE -- "Docs Relevant" --> GENERATE
-    GRADE -- "Docs Irrelevant" --> REWRITE
+    %% Document Grading & Fallback
+    RETRIEVE --> GRADE{"Grade Relevance"}
+    GRADE -->|"Relevant Docs Found"| GENERATE["Synthesize Answer"]
+    GRADE -->|"Docs Irrelevant"| REWRITE["Rewrite Query"]
 
     REWRITE --> WEB
     WEB --> GENERATE
 
-    GENERATE --> AUDIT
-    AUDIT -- "Grounded & Resolves Query" --> END_OK
-    AUDIT -- "Hallucination (Retry < 3)" --> GENERATE
-    AUDIT -- "Unresolved Query (Retry < 3)" --> REWRITE
-    AUDIT -- "Max Retries Reached" --> END_OK
+    %% Audit & Output
+    GENERATE --> AUDIT{"Self-RAG Audit"}
+    
+    AUDIT -->|"Pass (Grounded)"| END_OK([Verified Answer])
+    AUDIT -->|"Hallucination Detected"| GENERATE
+    AUDIT -->|"Unresolved Question"| REWRITE
 
     GEN_LLM --> END_OK
 
-    %% Formatting
+    %% Styling
     style START fill:#1e293b,stroke:#64748b,stroke-width:2px,color:#fff
     style END_OK fill:#065f46,stroke:#10b981,stroke-width:2px,color:#fff
     style ROUTER fill:#1e40af,stroke:#3b82f6,stroke-width:2px,color:#fff
@@ -84,6 +65,7 @@ flowchart TD
     style GENERATE fill:#0f766e,stroke:#14b8a6,stroke-width:1px,color:#fff
     style GEN_LLM fill:#0f766e,stroke:#14b8a6,stroke-width:1px,color:#fff
 ```
+
 
 
 ---
