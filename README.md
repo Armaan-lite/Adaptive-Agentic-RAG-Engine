@@ -13,7 +13,7 @@ Unlike standard naive RAG pipelines that unconditionally fetch vector embeddings
 
 ---
 
-## 🎯 Executive Summary (For Recruiters & Tech Leads)
+## 🎯 Executive Summary 
 
 Traditional RAG suffers from **two major flaws**:
 1. **Retrieval Blindness:** It always queries the vector DB even for general greetings (`"hi"`) or current events (`"latest tech news"`).
