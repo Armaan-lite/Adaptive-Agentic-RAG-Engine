@@ -53,13 +53,19 @@ def decide_after_generation(state: GraphState) -> str:
 
     Returns:
         'useful': Grounded & answers question -> END
-        'not_grounded': Hallucinated -> Regenerate answer
-        'not_useful': Didn't answer question -> Rewrite query & Web Search
+        'not_grounded': Hallucinated -> Regenerate answer (max retries enforced)
+        'not_useful': Didn't answer question -> Rewrite query & Web Search (max retries enforced)
     """
     print("--- AUDIT: EVALUATING GENERATION QUALITY ---")
     query = state["query"]
     documents = state["documents"]
     generation = state["generation"]
+    retry_count = state.get("retry_count", 0) or 0
+
+    MAX_RETRIES = 3
+    if retry_count >= MAX_RETRIES:
+        print(f"--- AUDIT: Max retry limit reached ({MAX_RETRIES}). Ending execution to prevent infinite loop. ---")
+        return "useful"
 
     llm = get_llm(temperature=0)
     structured_audit_llm = llm.with_structured_output(AuditResult)
@@ -80,10 +86,12 @@ def decide_after_generation(state: GraphState) -> str:
         print("--- AUDIT: Grounded & Answers Question -> END ---")
         return "useful"
     elif not result.is_grounded:
-        print("--- AUDIT: Hallucination Detected -> Regenerating ---")
+        print(f"--- AUDIT: Hallucination Detected -> Regenerating (Retry {retry_count + 1}/{MAX_RETRIES}) ---")
+        state["retry_count"] = retry_count + 1
         return "not_grounded"
     else:
-        print("--- AUDIT: Did Not Resolve Query -> Rewriting Query ---")
+        print(f"--- AUDIT: Did Not Resolve Query -> Rewriting Query (Retry {retry_count + 1}/{MAX_RETRIES}) ---")
+        state["retry_count"] = retry_count + 1
         return "not_useful"
 
 
